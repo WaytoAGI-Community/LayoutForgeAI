@@ -2,7 +2,7 @@
 import OpenAI from "openai";
 import { GoogleGenAI } from "@google/genai";
 import { OpenAIConfig } from "./openaiService";
-import { ServiceProvider } from "../types";
+import { ServiceProvider, DocumentDesign } from "../types";
 
 const WECHAT_LAYOUT_SYSTEM_PROMPT = `
 You are a WeChat article layout converter.
@@ -58,6 +58,47 @@ Content rules:
 - Do NOT invent extra content.
 `;
 
+const WECHAT_WRAPPER_SYSTEM_PROMPT = `
+You are an expert WeChat HTML/CSS Layout Engineer.
+Your task is to generate the OUTER CONTAINER HTML structure for a WeChat article based on a provided "DocumentDesign" JSON.
+
+Input:
+- Design JSON (contains Tailwind classes for page background, container styling, fonts, etc.).
+
+Output:
+- A single HTML snippet representing the PAGE WRAPPER.
+- Use INLINE CSS exclusively (style="...").
+- Do NOT include <html>, <head>, <body> tags.
+- Structure:
+  <section id="wechat-wrapper" style="... (Page Background styles) ...">
+     <section id="wechat-container" style="... (Container Background, Shadow, Padding, Radius, Layout settings) ...">
+        <!-- Header Metadata (Theme Name) -->
+        <section style="opacity:0.5; font-size:12px; margin-bottom:20px; text-align:center; font-family:sans-serif; letter-spacing: 1px;">
+           {THEME_NAME}
+        </section>
+        
+        <!-- THE CONTENT PLACEHOLDER -->
+        {{CONTENT}}
+        
+        <!-- Footer Flourish -->
+        <section style="text-align:center; margin-top:40px; opacity:0.3; font-size: 12px;">***</section>
+     </section>
+  </section>
+
+Translation Rules (Tailwind -> Inline CSS):
+- bg-slate-100 -> background-color: #f1f5f9;
+- bg-white -> background-color: #ffffff;
+- shadow-xl -> box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+- p-8 -> padding: 32px;
+- rounded-xl -> border-radius: 12px;
+- max-w-2xl -> max-width: 672px; margin: 0 auto;
+
+IMPORTANT:
+- If layoutType is 'flat', remove shadows/radius from the container and make it blend with the page.
+- Ensure the wrapper has min-height: 100vh (or equivalent) to look like a full page.
+- Return ONLY the HTML string with {{CONTENT}} inside.
+`;
+
 export interface ExportAIConfig {
   provider: ServiceProvider;
   openai?: OpenAIConfig;
@@ -72,6 +113,72 @@ export function splitMarkdownIntoBlocks(md: string): string[] {
     .split(/\n\s*\n/g)
     .map(block => block.trim())
     .filter(block => block.length > 0);
+}
+
+export async function generateWeChatWrapper(
+  config: ExportAIConfig,
+  design: DocumentDesign
+): Promise<string> {
+  const userPrompt = `
+    Generate WeChat Wrapper HTML for this design:
+    ${JSON.stringify(design, null, 2)}
+  `;
+
+  let wrapperHtml = "";
+
+  if (config.provider === 'openai' && config.openai) {
+      const client = new OpenAI({
+        apiKey: config.openai.apiKey,
+        baseURL: config.openai.baseUrl || 'https://api.openai.com/v1',
+        dangerouslyAllowBrowser: true,
+      });
+
+      const response = await client.chat.completions.create({
+        model: config.openai.model,
+        messages: [
+          { role: 'system', content: WECHAT_WRAPPER_SYSTEM_PROMPT },
+          { role: 'user', content: userPrompt }
+        ],
+      });
+      wrapperHtml = response.choices[0]?.message?.content || "";
+
+  } else if (config.provider === 'gemini') {
+      const apiKey = config.geminiApiKey;
+      if (!apiKey) throw new Error("API Key missing");
+      
+      const ai = new GoogleGenAI({ apiKey });
+      
+      try {
+        const response = await ai.models.generateContent({
+          model: 'gemini-3-flash-preview',
+          contents: userPrompt,
+          config: {
+              systemInstruction: WECHAT_WRAPPER_SYSTEM_PROMPT
+          }
+        });
+        wrapperHtml = response.text || "";
+      } catch (error: any) {
+        console.error("Gemini Wrapper Gen Error:", error);
+        // Fallback simple wrapper if AI fails
+        wrapperHtml = `<section style="padding: 20px;">{{CONTENT}}</section>`;
+      }
+  }
+  
+  // Cleanup markdown code blocks if AI adds them
+  wrapperHtml = wrapperHtml.replace(/```html/g, '').replace(/```/g, '').trim();
+  
+  // Fallback if AI fails to add placeholder
+  if (!wrapperHtml.includes('{{CONTENT}}')) {
+      // Try to inject before the last closing div/section
+      const lastCloseIndex = wrapperHtml.lastIndexOf('</');
+      if (lastCloseIndex > -1) {
+          wrapperHtml = wrapperHtml.substring(0, lastCloseIndex) + "\n{{CONTENT}}\n" + wrapperHtml.substring(lastCloseIndex);
+      } else {
+          wrapperHtml += "\n{{CONTENT}}";
+      }
+  }
+  
+  return wrapperHtml;
 }
 
 export async function* streamWeChatCardHtml(
