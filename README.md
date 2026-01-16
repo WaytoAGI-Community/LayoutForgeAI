@@ -18,6 +18,7 @@
     `npm run dev`
 
 ---
+<img width="1495" height="757" alt="image" src="https://github.com/user-attachments/assets/51e766d9-9bc7-47f3-94f8-de88b36950ec" />
 
 ## 🪄 LayoutForge AI：重构你的排版审美
 
@@ -32,6 +33,7 @@
 *   **配色方案**：系统会自动匹配背景色与文字对比度，确保视觉舒适。
 *   **字体排印**：精选适合风格的字体族，并自动设定**层级分明**的字号。
 *   **装饰元素**：细腻的投影、边框以及圆角细节，让排版拥有**呼吸感**。
+<img width="2048" height="1362" alt="cde93cbad438dae5d4cd5b79641c2ad7" src="https://github.com/user-attachments/assets/fdc33ab4-a3b8-4725-bc0d-2efd4af8fb9c" />
 
 ---
 
@@ -42,6 +44,7 @@
 *   **情绪表达**：根据语境，自动匹配并插入精准的 **Emoji** 🚀，增强亲和力。
 *   **易读性优化**：重塑长难句，确保段落结构**短小精悍**，阅读不疲劳。
 *   **逻辑提炼**：自动提取核心卖点，并转化为结构化的 **H2 标题**。
+<img width="2772" height="1316" alt="575ad0c640a54dc5a8d3ec3e9907e40e" src="https://github.com/user-attachments/assets/9a13de0f-5814-4ccd-8da1-6161ab19f47e" />
 
 ---
 
