@@ -93,7 +93,8 @@ export const generateLayoutWithOpenAI = async (
   stylePrompt: string, 
   fullContent: string,
   preferredLayout: 'auto' | 'card' | 'flat' | 'multi-card' = 'auto',
-  onProgress?: (type: 'design' | 'content', data: any) => void
+  onProgress?: (type: 'design' | 'content', data: any) => void,
+  existingDesign?: DocumentDesign
 ): Promise<{ design: DocumentDesign; content: string }> => {
   
   if (!config.apiKey) throw new Error("OpenAI API Key is missing.");
@@ -104,37 +105,44 @@ export const generateLayoutWithOpenAI = async (
     dangerouslyAllowBrowser: true // Client-side only demo
   });
 
-  // 1. Generate Design (using first chunk as sample)
-  const sampleContent = fullContent.slice(0, 800);
-  const designPrompt = `
-    STYLE REQUEST: ${stylePrompt}
-    LAYOUT PREFERENCE: ${preferredLayout}
-    CONTENT SAMPLE: ${sampleContent}
-  `;
-
   let design: DocumentDesign;
-  
-  try {
-    const completion = await client.chat.completions.create({
-      messages: [
-        { role: "system", content: DESIGN_SYSTEM_INSTRUCTION },
-        { role: "user", content: designPrompt }
-      ],
-      model: config.model,
-      response_format: { type: "json_object" },
-    });
 
-    const content = completion.choices[0].message.content;
-    if (!content) throw new Error("Empty response from OpenAI");
-    
-    design = JSON.parse(content) as DocumentDesign;
-    
-    // Notify UI about design ready
-    if (onProgress) onProgress('design', design);
+  // 1. Determine Design Strategy
+  if (existingDesign && existingDesign.id !== 'default') {
+      design = existingDesign;
+      if (onProgress) onProgress('design', design);
+  } else {
+      // 1. Generate Design (using first chunk as sample)
+      const sampleContent = fullContent.slice(0, 800);
+      const designPrompt = `
+        STYLE REQUEST: ${stylePrompt}
+        LAYOUT PREFERENCE: ${preferredLayout}
+        CONTENT SAMPLE: ${sampleContent}
+      `;
+      
+      try {
+        const completion = await client.chat.completions.create({
+          messages: [
+            { role: "system", content: DESIGN_SYSTEM_INSTRUCTION },
+            { role: "user", content: designPrompt }
+          ],
+          model: config.model,
+          response_format: { type: "json_object" },
+        });
 
-  } catch (e) {
-    console.error("OpenAI Design Generation Error", e);
-    throw new Error("Design generation failed with OpenAI.");
+        const content = completion.choices[0].message.content;
+        if (!content) throw new Error("Empty response from OpenAI");
+        
+        design = JSON.parse(content) as DocumentDesign;
+        design.id = `openai-${Date.now()}`;
+        
+        // Notify UI about design ready
+        if (onProgress) onProgress('design', design);
+
+      } catch (e) {
+        console.error("OpenAI Design Generation Error", e);
+        throw new Error("Design generation failed with OpenAI.");
+      }
   }
 
   // 2. Batch Process Content

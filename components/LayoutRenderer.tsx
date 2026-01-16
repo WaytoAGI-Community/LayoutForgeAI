@@ -26,7 +26,6 @@ export const LayoutRenderer: React.FC<LayoutRendererProps> = ({ data, content, p
   const contentSections = useMemo(() => {
     if (!isMultiCard) return [content];
     // Split content by H1 (#) or H2 (##) at the start of a line
-    // We use a regex that looks ahead for the header, keeping the delimiter
     const sections = content.split(/(?=^#{1,2}\s)/gm).filter(s => s.trim().length > 0);
     return sections.length > 0 ? sections : [content];
   }, [content, isMultiCard]);
@@ -40,8 +39,6 @@ export const LayoutRenderer: React.FC<LayoutRendererProps> = ({ data, content, p
   const outerContainerWidth = isMultiCard ? 'max-w-6xl w-full px-4' : data.containerMaxWidth;
   
   // Styles applied to the actual content box(es)
-  // For multi-card, these apply to EACH card.
-  // For card/flat, these apply to the ONE container.
   const cardBaseStyles = `${data.containerBackground} ${data.containerShadow} ${data.containerPadding} ${data.containerBorderRadius}`;
   const flatBaseStyles = `${data.containerBackground} ${data.containerPadding} min-h-screen shadow-none rounded-none`;
   
@@ -50,20 +47,21 @@ export const LayoutRenderer: React.FC<LayoutRendererProps> = ({ data, content, p
     : (isCard ? `w-full ${cardBaseStyles}` : `w-full ${flatBaseStyles}`);
 
   // Markdown Components Config
+  // We add 'layout-block' class to help the exporter identify slice boundaries
   const mdComponents = {
-    h1: ({node, ...props}: any) => <h1 className={`${data.titleSize} ${data.heading1}`} {...props} />,
-    h2: ({node, ...props}: any) => <h2 className={data.heading2} {...props} />,
-    h3: ({node, ...props}: any) => <h3 className="text-xl font-bold mt-8 mb-4 opacity-90" {...props} />,
-    p: ({node, ...props}: any) => <p className={data.paragraph} {...props} />,
-    blockquote: ({node, ...props}: any) => <blockquote className={data.blockquote} {...props} />,
-    ul: ({node, ...props}: any) => <ul className="list-disc list-inside mb-6 space-y-2 opacity-90 pl-2" {...props} />,
-    ol: ({node, ...props}: any) => <ol className="list-decimal list-inside mb-6 space-y-2 opacity-90 pl-2" {...props} />,
-    li: ({node, ...props}: any) => <li className="" {...props} />,
+    h1: ({node, ...props}: any) => <h1 className={`layout-block ${data.titleSize} ${data.heading1}`} {...props} />,
+    h2: ({node, ...props}: any) => <h2 className={`layout-block ${data.heading2}`} {...props} />,
+    h3: ({node, ...props}: any) => <h3 className={`layout-block text-xl font-bold mt-8 mb-4 opacity-90`} {...props} />,
+    p: ({node, ...props}: any) => <p className={`layout-block ${data.paragraph}`} {...props} />,
+    blockquote: ({node, ...props}: any) => <blockquote className={`layout-block ${data.blockquote}`} {...props} />,
+    ul: ({node, ...props}: any) => <ul className={`layout-block list-disc list-inside mb-6 space-y-2 opacity-90 pl-2`} {...props} />,
+    ol: ({node, ...props}: any) => <ol className={`layout-block list-decimal list-inside mb-6 space-y-2 opacity-90 pl-2`} {...props} />,
+    li: ({node, ...props}: any) => <li className="" {...props} />, // li is usually inside ul/ol, so no layout-block needed
     strong: ({node, ...props}: any) => <strong style={{ color: data.highlightColor }} className="font-bold" {...props} />,
-    hr: ({node, ...props}: any) => <hr className={data.dividerStyle} {...props} />,
+    hr: ({node, ...props}: any) => <hr className={`layout-block ${data.dividerStyle}`} {...props} />,
     a: ({node, ...props}: any) => <a className="underline decoration-2 underline-offset-2 hover:opacity-80 transition" style={{ color: data.highlightColor, textDecorationColor: data.highlightColor }} {...props} />,
     code: ({node, ...props}: any) => <code className="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-sm font-mono text-pink-500" {...props} />,
-    pre: ({node, ...props}: any) => <pre className="bg-slate-900 text-slate-100 p-4 rounded-lg overflow-x-auto my-6 text-sm font-mono leading-relaxed" {...props} />,
+    pre: ({node, ...props}: any) => <pre className={`layout-block bg-slate-900 text-slate-100 p-4 rounded-lg overflow-x-auto my-6 text-sm font-mono leading-relaxed`} {...props} />,
   };
 
   return (
@@ -96,12 +94,13 @@ export const LayoutRenderer: React.FC<LayoutRendererProps> = ({ data, content, p
                         <div 
                             key={index}
                             className={`
+                                layout-card
                                 ${contentBoxStyles}
                                 transition-all duration-500
                                 ${isMultiCard ? 'h-full' : ''} 
                             `}
                         >
-                             <article className={`${data.baseFontSize} ${data.lineHeight}`}>
+                             <article id="markdown-article" className={`${data.baseFontSize} ${data.lineHeight}`}>
                                 <ReactMarkdown components={mdComponents}>
                                     {sectionContent}
                                 </ReactMarkdown>

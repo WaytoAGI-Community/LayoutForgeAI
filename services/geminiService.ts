@@ -59,76 +59,135 @@ function splitTextIntoChunks(text: string, maxChars: number): string[] {
 
 // --- Schemas ---
 
+const baseDesignProperties = {
+  id: { type: Type.STRING },
+  themeName: { type: Type.STRING },
+  layoutType: { type: Type.STRING, enum: ["card", "flat", "multi-card"] },
+  pageBackground: { type: Type.STRING },
+  containerBackground: { type: Type.STRING },
+  containerShadow: { type: Type.STRING },
+  containerMaxWidth: { type: Type.STRING },
+  containerPadding: { type: Type.STRING },
+  containerBorderRadius: { type: Type.STRING },
+  fontFamily: { type: Type.STRING },
+  baseFontSize: { type: Type.STRING },
+  lineHeight: { type: Type.STRING },
+  textColor: { type: Type.STRING },
+  titleSize: { type: Type.STRING },
+  heading1: { type: Type.STRING },
+  heading2: { type: Type.STRING },
+  paragraph: { type: Type.STRING },
+  blockquote: { type: Type.STRING },
+  highlightColor: { type: Type.STRING },
+  dividerStyle: { type: Type.STRING }
+};
+
 const designSchema: Schema = {
   type: Type.OBJECT,
-  properties: {
-    id: { type: Type.STRING },
-    themeName: { type: Type.STRING },
-    layoutType: { type: Type.STRING, enum: ["card", "flat", "multi-card"] },
-    pageBackground: { type: Type.STRING },
-    containerBackground: { type: Type.STRING },
-    containerShadow: { type: Type.STRING },
-    containerMaxWidth: { type: Type.STRING },
-    containerPadding: { type: Type.STRING },
-    containerBorderRadius: { type: Type.STRING },
-    fontFamily: { type: Type.STRING },
-    baseFontSize: { type: Type.STRING },
-    lineHeight: { type: Type.STRING },
-    textColor: { type: Type.STRING },
-    titleSize: { type: Type.STRING },
-    heading1: { type: Type.STRING },
-    heading2: { type: Type.STRING },
-    paragraph: { type: Type.STRING },
-    blockquote: { type: Type.STRING },
-    highlightColor: { type: Type.STRING },
-    dividerStyle: { type: Type.STRING }
-  },
+  properties: baseDesignProperties,
   required: ['themeName', 'layoutType', 'pageBackground', 'containerBackground', 'heading2', 'textColor']
 };
 
+const multiDesignSchema: Schema = {
+  type: Type.ARRAY,
+  items: {
+    type: Type.OBJECT,
+    properties: baseDesignProperties,
+    required: ['themeName', 'layoutType', 'heading2']
+  }
+};
+
 // --- Main Service ---
+
+export const generateDesignVariations = async (
+  stylePrompt: string,
+  preferredLayout: 'auto' | 'card' | 'flat' | 'multi-card' = 'auto'
+): Promise<DocumentDesign[]> => {
+  if (!process.env.API_KEY) throw new Error("API Key is missing.");
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+  const prompt = `
+    Create 2 DISTINCT design variations based on this request: "${stylePrompt}".
+    One should be closer to the literal request, the other should be a creative interpretation.
+    Layout Preference: ${preferredLayout}.
+    Ensure both have different 'themeName', colors, and 'heading2' styles.
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: prompt,
+      config: {
+        systemInstruction: DESIGN_SYSTEM_INSTRUCTION,
+        responseMimeType: "application/json",
+        responseSchema: multiDesignSchema
+      }
+    });
+
+    if (!response.text) throw new Error("No designs generated");
+    const designs = JSON.parse(response.text) as DocumentDesign[];
+    
+    // Assign unique IDs to ensure selection tracking works
+    return designs.map((d, i) => ({
+      ...d,
+      id: `gen-${Date.now()}-${i}`
+    }));
+  } catch (e) {
+    console.error("Design Variation Error", e);
+    throw e;
+  }
+};
 
 export const generateLayoutFromPrompt = async (
   stylePrompt: string, 
   fullContent: string,
   preferredLayout: 'auto' | 'card' | 'flat' | 'multi-card' = 'auto',
-  onProgress?: (type: 'design' | 'content', data: any) => void
+  onProgress?: (type: 'design' | 'content', data: any) => void,
+  existingDesign?: DocumentDesign
 ): Promise<{ design: DocumentDesign; content: string }> => {
   
   // Directly check and use process.env.API_KEY as per guidelines
   if (!process.env.API_KEY) throw new Error("API Key is missing.");
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-  // 1. Generate Design (using first chunk as sample)
-  const sampleContent = fullContent.slice(0, 800);
-  const designPrompt = `
-    STYLE REQUEST: ${stylePrompt}
-    LAYOUT PREFERENCE: ${preferredLayout}
-    CONTENT SAMPLE: ${sampleContent}
-  `;
-
   let design: DocumentDesign;
-  
-  try {
-    const designResp = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: designPrompt,
-      config: {
-        systemInstruction: DESIGN_SYSTEM_INSTRUCTION,
-        responseMimeType: "application/json",
-        responseSchema: designSchema
+
+  // 1. Determine Design Strategy
+  if (existingDesign && existingDesign.id !== 'default') {
+      // Use the user-selected design
+      design = existingDesign;
+      if (onProgress) onProgress('design', design);
+  } else {
+      // Generate new design
+      const sampleContent = fullContent.slice(0, 800);
+      const designPrompt = `
+        STYLE REQUEST: ${stylePrompt}
+        LAYOUT PREFERENCE: ${preferredLayout}
+        CONTENT SAMPLE: ${sampleContent}
+      `;
+      
+      try {
+        const designResp = await ai.models.generateContent({
+          model: 'gemini-3-flash-preview',
+          contents: designPrompt,
+          config: {
+            systemInstruction: DESIGN_SYSTEM_INSTRUCTION,
+            responseMimeType: "application/json",
+            responseSchema: designSchema
+          }
+        });
+
+        if (!designResp.text) throw new Error("Failed to generate design JSON");
+        design = JSON.parse(designResp.text) as DocumentDesign;
+        design.id = `gen-single-${Date.now()}`;
+        
+        // Notify UI about design ready
+        if (onProgress) onProgress('design', design);
+
+      } catch (e) {
+        console.error("Design Generation Error", e);
+        throw new Error("Design generation failed.");
       }
-    });
-
-    if (!designResp.text) throw new Error("Failed to generate design JSON");
-    design = JSON.parse(designResp.text) as DocumentDesign;
-    
-    // Notify UI about design ready
-    if (onProgress) onProgress('design', design);
-
-  } catch (e) {
-    console.error("Design Generation Error", e);
-    throw new Error("Design generation failed.");
   }
 
   // 2. Batch Process Content

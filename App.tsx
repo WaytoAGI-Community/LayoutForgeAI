@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DocumentDesign, INITIAL_DESIGN, Language, LayoutMode, ServiceProvider } from './types';
+import { DocumentDesign, INITIAL_DESIGN, Language, ServiceProvider } from './types';
 import { OpenAIConfig, generateLayoutWithOpenAI } from './services/openaiService';
 import { generateLayoutFromPrompt } from './services/geminiService';
 import { TRANSLATIONS, DEFAULT_MARKDOWN } from './constants';
@@ -15,7 +15,6 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'write' | 'preview' | 'config'>('write');
   const [lang, setLang] = useState<Language>('zh');
   const [prompt, setPrompt] = useState('');
-  const [layoutMode, setLayoutMode] = useState<LayoutMode>('auto');
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,14 +44,18 @@ const App: React.FC = () => {
         }
     };
 
+    // Determine if we are using a pre-selected design (non-default)
+    const designToUse = designData.id !== 'default' ? designData : undefined;
+
     try {
       if (provider === 'gemini') {
           // Use Default Gemini Service
           await generateLayoutFromPrompt(
             prompt, 
             markdownContent, 
-            layoutMode,
-            progressCallback
+            'auto',
+            progressCallback,
+            designToUse
           );
       } else {
           // Use OpenAI Service
@@ -61,8 +64,9 @@ const App: React.FC = () => {
             openaiConfig,
             prompt,
             markdownContent,
-            layoutMode,
-            progressCallback
+            'auto',
+            progressCallback,
+            designToUse
           );
       }
     } catch (err: any) {
@@ -89,14 +93,13 @@ const App: React.FC = () => {
         setMarkdownContent={setMarkdownContent}
         prompt={prompt}
         setPrompt={setPrompt}
-        layoutMode={layoutMode}
-        setLayoutMode={setLayoutMode}
         isGenerating={isGenerating}
         handleGenerate={handleGenerate}
         error={error}
         lang={lang}
         toggleLanguage={toggleLanguage}
         designData={designData}
+        setDesignData={setDesignData}
         provider={provider}
         setShowAiSettings={setShowAiSettings}
         t={t}
