@@ -19,6 +19,9 @@ export const LayoutRenderer: React.FC<LayoutRendererProps> = ({ data, content, p
     ? 'w-full h-full overflow-y-auto bg-white' // Mobile inner scroll
     : 'w-full h-full'; 
 
+    
+  console.log(data);
+  
   const isCard = data.layoutType === 'card';
   const isMultiCard = data.layoutType === 'multi-card';
 

@@ -120,11 +120,13 @@ export const generateDesignVariations = async (
   `;
 
   try {
+    console.log("generateContent called with prompt:", prompt);
+    
     const responseText = await generateContent(config, {
       prompt,
       systemInstruction: DESIGN_SYSTEM_INSTRUCTION,
       jsonMode: true,
-      jsonSchema: config.provider === 'gemini' ? multiDesignSchema : undefined
+      jsonSchema: multiDesignSchema
     });
 
     let designs: DocumentDesign[] = [];
@@ -182,7 +184,7 @@ export const generateLayoutFromPrompt = async (
             prompt: designPrompt,
             systemInstruction: DESIGN_SYSTEM_INSTRUCTION,
             jsonMode: true,
-            jsonSchema: config.provider === 'gemini' ? designSchema : undefined
+            jsonSchema: designSchema
         });
 
         design = JSON.parse(designRespText) as DocumentDesign;
