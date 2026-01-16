@@ -57,7 +57,7 @@
    7. **立即复制 token**
 
 2. **在源仓库配置 Secret**
-   - 访问：https://github.com/dmeckhg-del/LayoutForgeAI-Page/settings/secrets/actions
+   - 访问：https://github.com//WaytoAGI-Community/LayoutForgeAI/settings/secrets/actions
    - 点击 **"New repository secret"**
    - **Name**: `DEPLOY_TOKEN`
    - **Secret**: 粘贴刚才复制的 PAT
@@ -88,7 +88,7 @@
 ### 手动触发
 
 可以在 GitHub Actions 页面手动运行工作流：
-1. 访问 https://github.com/dmeckhg-del/LayoutForgeAI-Page/actions
+1. 访问 https://github.com//WaytoAGI-Community/LayoutForgeAI/actions
 2. 选择 "Build and Deploy to GitHub Pages"
 3. 点击 "Run workflow"
 
@@ -213,7 +213,7 @@ Please make sure you have the correct access rights and the repository exists.
 
 ## 仍然无法解决？
 
-1. 查看 GitHub Actions 日志：https://github.com/dmeckhg-del/LayoutForgeAI-Page/actions
+1. 查看 GitHub Actions 日志：https://github.com//WaytoAGI-Community/LayoutForgeAI/actions
 2. 检查 workflow 运行的详细错误信息
 3. 尝试手动运行 workflow 以排除 webhook 问题
 4. 确认所有 secrets 都已正确配置
