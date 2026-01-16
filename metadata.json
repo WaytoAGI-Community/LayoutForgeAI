@@ -1,0 +1,5 @@
+{
+  "name": "LayoutForge AI",
+  "description": "An intelligent web document layout generator powered by Gemini. Describe your desired layout, and watch it build instantly with real-time preview and code export.",
+  "requestFramePermissions": []
+}
