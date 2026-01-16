@@ -63,3 +63,19 @@ export const INITIAL_DESIGN: DocumentDesign = {
 export type Language = 'zh' | 'en';
 export type LayoutMode = 'auto' | 'card' | 'flat' | 'multi-card';
 export type ServiceProvider = 'gemini' | 'openai';
+
+// AI Configuration
+export interface OpenAIConfig {
+  apiKey: string;
+  baseUrl?: string;
+  model: string;
+}
+
+export interface AIConfig {
+  provider: ServiceProvider;
+  openai?: OpenAIConfig;
+  // Gemini uses process.env.API_KEY primarily, but we can allow overrides if needed
+  gemini?: {
+    apiKey?: string;
+  };
+}

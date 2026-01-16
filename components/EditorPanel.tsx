@@ -5,7 +5,7 @@ import {
   Settings, 
   Layout as LayoutIcon
 } from 'lucide-react';
-import { DocumentDesign, Language, ServiceProvider } from '../types';
+import { DocumentDesign, Language, ServiceProvider, AIConfig } from '../types';
 import { WriteTab } from './editor/WriteTab';
 import { PreviewTab } from './editor/PreviewTab';
 import { ConfigTab } from './editor/ConfigTab';
@@ -26,6 +26,7 @@ interface EditorPanelProps {
   setDesignData: (design: DocumentDesign) => void;
   provider: ServiceProvider;
   setShowAiSettings: (show: boolean) => void;
+  aiConfig: AIConfig;
   t: any;
 }
 
@@ -45,6 +46,7 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
   setDesignData,
   provider,
   setShowAiSettings,
+  aiConfig,
   t
 }) => {
 
@@ -110,6 +112,7 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
             toggleLanguage={toggleLanguage}
             provider={provider}
             setShowAiSettings={setShowAiSettings}
+            aiConfig={aiConfig}
             t={t}
           />
         )}

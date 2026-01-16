@@ -1,8 +1,6 @@
-
 import React, { useState } from 'react';
-import { DocumentDesign, INITIAL_DESIGN, Language, ServiceProvider } from './types';
-import { OpenAIConfig, generateLayoutWithOpenAI } from './services/openaiService';
-import { generateLayoutFromPrompt } from './services/geminiService';
+import { DocumentDesign, INITIAL_DESIGN, Language, ServiceProvider, AIConfig, OpenAIConfig } from './types';
+import { generateLayoutFromPrompt } from './services/layoutService';
 import { TRANSLATIONS, DEFAULT_MARKDOWN } from './constants';
 import { EditorPanel } from './components/EditorPanel';
 import { PreviewPanel } from './components/PreviewPanel';
@@ -20,14 +18,22 @@ const AppContent: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // AI Provider State
+  // AI Configuration State
   const [showAiSettings, setShowAiSettings] = useState(false);
   const [provider, setProvider] = useState<ServiceProvider>('gemini');
+  const [geminiKey, setGeminiKey] = useState('');
   const [openaiConfig, setOpenaiConfig] = useState<OpenAIConfig>({
     apiKey: '',
     baseUrl: 'https://api.openai.com/v1',
     model: 'gpt-4-turbo-preview'
   });
+
+  // Construct global config object on the fly
+  const aiConfig: AIConfig = {
+      provider,
+      openai: openaiConfig,
+      gemini: { apiKey: geminiKey || process.env.API_KEY } 
+  };
 
   const { addToast } = useToast();
   const t = TRANSLATIONS[lang];
@@ -47,32 +53,19 @@ const AppContent: React.FC = () => {
         }
     };
 
-    // Determine if we are using a pre-selected design (non-default)
     const designToUse = designData.id !== 'default' ? designData : undefined;
 
     try {
-      if (provider === 'gemini') {
-          // Use Default Gemini Service
-          await generateLayoutFromPrompt(
-            prompt, 
-            markdownContent, 
-            'auto',
-            progressCallback,
-            designToUse
-          );
-      } else {
-          // Use OpenAI Service
-          if (!openaiConfig.apiKey) throw new Error("Please configure OpenAI API Key in settings");
-          await generateLayoutWithOpenAI(
-            openaiConfig,
-            prompt,
-            markdownContent,
-            'auto',
-            progressCallback,
-            designToUse
-          );
-      }
-      addToast(t.generate + " " + t.copied, 'success'); // Reusing translation keys creatively or just success
+      await generateLayoutFromPrompt(
+        aiConfig,
+        prompt, 
+        markdownContent, 
+        'auto',
+        progressCallback,
+        designToUse
+      );
+      
+      addToast(t.generate + " " + t.copied, 'success');
     } catch (err: any) {
       const msg = err.message || t.error;
       setError(msg);
@@ -85,8 +78,6 @@ const AppContent: React.FC = () => {
   const toggleLanguage = () => {
     setLang(prev => prev === 'zh' ? 'en' : 'zh');
   };
-
-  // --- Render ---
 
   return (
     <div className="h-screen w-full flex flex-col md:flex-row bg-slate-100 overflow-hidden">
@@ -108,6 +99,7 @@ const AppContent: React.FC = () => {
         setDesignData={setDesignData}
         provider={provider}
         setShowAiSettings={setShowAiSettings}
+        aiConfig={aiConfig} // Pass full config down
         t={t}
       />
 
@@ -119,8 +111,7 @@ const AppContent: React.FC = () => {
         setPreviewMode={setPreviewMode}
         lang={lang}
         t={t}
-        provider={provider}
-        openaiConfig={openaiConfig}
+        aiConfig={aiConfig} // Pass full config down
       />
       
        {/* Modal */}
@@ -129,6 +120,8 @@ const AppContent: React.FC = () => {
         onClose={() => setShowAiSettings(false)}
         provider={provider}
         setProvider={setProvider}
+        geminiKey={geminiKey}
+        setGeminiKey={setGeminiKey}
         openaiConfig={openaiConfig}
         setOpenaiConfig={setOpenaiConfig}
         t={t}

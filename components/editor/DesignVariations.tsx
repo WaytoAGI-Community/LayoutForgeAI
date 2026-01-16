@@ -29,6 +29,13 @@ export const DesignVariations: React.FC<DesignVariationsProps> = ({
           const isMulti = design.layoutType === 'multi-card';
           const isFlat = design.layoutType === 'flat';
           const isCard = design.layoutType === 'card';
+          
+          // Safety fallbacks for potentially missing AI-generated properties
+          const pageBg = design.pageBackground || 'bg-slate-50';
+          const containerBg = design.containerBackground || 'bg-white';
+          const highlight = design.highlightColor || '#6366f1';
+          const fontFamily = design.fontFamily || 'font-sans';
+          const textColor = design.textColor || 'text-slate-800';
 
           return (
             <div 
@@ -49,7 +56,7 @@ export const DesignVariations: React.FC<DesignVariationsProps> = ({
               */}
               <div className="aspect-[16/10] w-full relative bg-slate-50 overflow-hidden select-none">
                  <div className="absolute top-0 left-0 w-[455%] h-[455%] origin-top-left transform scale-[0.22]">
-                    <div className={`w-full h-full ${design.pageBackground} ${design.fontFamily} ${design.textColor} flex flex-col p-12`}>
+                    <div className={`w-full h-full ${pageBg} ${fontFamily} ${textColor} flex flex-col p-12`}>
                         
                         {/* --- Layout Simulation --- */}
                         
@@ -57,7 +64,7 @@ export const DesignVariations: React.FC<DesignVariationsProps> = ({
                         {isMulti && (
                           <div className="grid grid-cols-2 gap-8 h-full content-start">
                              {[1, 2].map(i => (
-                               <div key={i} className={`${design.containerBackground} ${design.containerShadow} ${design.containerBorderRadius} ${design.containerPadding} h-fit`}>
+                               <div key={i} className={`${containerBg} ${design.containerShadow} ${design.containerBorderRadius} ${design.containerPadding} h-fit`}>
                                   <h2 className={`${design.heading2} mb-4 text-3xl`}>Module {i}</h2>
                                   <div className={`${design.paragraph} text-2xl opacity-80 line-clamp-4`}>
                                     Grid content showing the dashboard structure.
@@ -69,7 +76,7 @@ export const DesignVariations: React.FC<DesignVariationsProps> = ({
 
                         {/* 2. Flat Layout Preview */}
                         {isFlat && (
-                           <div className={`w-full h-full ${design.containerBackground} ${design.containerPadding} border-x border-black/5`}>
+                           <div className={`w-full h-full ${containerBg} ${design.containerPadding} border-x border-black/5`}>
                               <div className={`${design.heading1} ${design.titleSize} mb-8`}>Doc Title</div>
                               <h2 className={`${design.heading2} mb-6 text-4xl`}>Section Header</h2>
                               <p className={`${design.paragraph} text-3xl leading-relaxed mb-6`}>
@@ -85,7 +92,7 @@ export const DesignVariations: React.FC<DesignVariationsProps> = ({
                         {/* 3. Card Layout Preview (PPT Style) */}
                         {isCard && (
                           <div className="flex-1 flex flex-col items-center justify-center">
-                             <div className={`${design.containerBackground} ${design.containerShadow} ${design.containerBorderRadius} ${design.containerPadding} w-full max-w-4xl mx-auto min-h-[500px] flex flex-col`}>
+                             <div className={`${containerBg} ${design.containerShadow} ${design.containerBorderRadius} ${design.containerPadding} w-full max-w-4xl mx-auto min-h-[500px] flex flex-col`}>
                                 <div className={`${design.heading1} ${design.titleSize} mb-8`}>
                                   {design.themeName}
                                 </div>
@@ -99,9 +106,9 @@ export const DesignVariations: React.FC<DesignVariationsProps> = ({
 
                                 <div className={`${design.paragraph} text-3xl leading-relaxed flex-1`}>
                                   <p className="mb-6">
-                                    The quick brown fox jumps over the lazy dog. This previews your <span style={{color: design.highlightColor, fontWeight: 'bold'}}>typography</span> choices.
+                                    The quick brown fox jumps over the lazy dog. This previews your <span style={{color: highlight, fontWeight: 'bold'}}>typography</span> choices.
                                   </p>
-                                  <div className={`p-4 border-l-8 text-2xl italic opacity-80 bg-black/5`} style={{borderColor: design.highlightColor}}>
+                                  <div className={`p-4 border-l-8 text-2xl italic opacity-80 bg-black/5`} style={{borderColor: highlight}}>
                                      "Design is intelligence made visible."
                                   </div>
                                 </div>
@@ -127,9 +134,9 @@ export const DesignVariations: React.FC<DesignVariationsProps> = ({
                    </span>
                    <div className="flex gap-1 mt-0.5">
                       {/* Color Swatches */}
-                      <div className="w-2 h-2 rounded-full ring-1 ring-slate-200" style={{background: design.highlightColor}}></div>
-                      <div className={`w-2 h-2 rounded-full ring-1 ring-slate-200 ${design.pageBackground.replace('bg-', 'bg-')}`}></div>
-                      <div className={`w-2 h-2 rounded-full ring-1 ring-slate-200 ${design.containerBackground.replace('bg-', 'bg-')}`}></div>
+                      <div className="w-2 h-2 rounded-full ring-1 ring-slate-200" style={{background: highlight}}></div>
+                      <div className={`w-2 h-2 rounded-full ring-1 ring-slate-200 ${pageBg}`}></div>
+                      <div className={`w-2 h-2 rounded-full ring-1 ring-slate-200 ${containerBg}`}></div>
                    </div>
                 </div>
                 {isSelected && (

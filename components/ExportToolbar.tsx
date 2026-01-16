@@ -1,10 +1,8 @@
-
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Monitor, Smartphone, Settings, Check, Loader2, FileCode, X, AlertCircle, Copy } from 'lucide-react';
-import { DocumentDesign, ServiceProvider } from '../types';
-import { OpenAIConfig } from '../services/openaiService';
-import { streamWeChatArticleFromMarkdown, generateWeChatWrapper, ExportAIConfig } from '../services/wechatExportService';
+import { DocumentDesign, AIConfig } from '../types';
+import { streamWeChatArticleFromMarkdown, generateWeChatWrapper } from '../services/wechatExportService';
 import { useToast } from './ToastSystem';
 
 interface ExportToolbarProps {
@@ -13,8 +11,7 @@ interface ExportToolbarProps {
   setPreviewMode: (mode: 'desktop' | 'mobile') => void;
   t: any;
   markdownContent: string;
-  provider: ServiceProvider;
-  openaiConfig: OpenAIConfig;
+  aiConfig: AIConfig;
 }
 
 export const ExportToolbar: React.FC<ExportToolbarProps> = ({
@@ -23,8 +20,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
   setPreviewMode,
   t,
   markdownContent,
-  provider,
-  openaiConfig
+  aiConfig
 }) => {
   const [copiedType, setCopiedType] = useState<'config' | 'html' | null>(null);
   const [isExporting, setIsExporting] = useState(false);
@@ -51,15 +47,6 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
   };
 
   const performCopy = async (htmlContent: string) => {
-    // Note: The HTML returned from generateWeChatWrapper is already wrapped
-    // We just wrap it one more time to be safe for Apple styles if needed, or just copy as is.
-    // The previous implementation added a wrapper, but now our AI generates the wrapper.
-    // Let's rely on the AI generated wrapper but add the JS underline class signature that WeChat likes.
-    
-    // Check if AI generated wrapper has the class. If not, we might need a minimal outer div.
-    // But usually copying valid HTML into WeChat editor works fine.
-    
-    // We'll trust the Generated HTML is mostly complete, but wrapping in a div with id="js_content" is standard practice.
     const finalCopyString = `
       <div class="rich_media_content js_underline_content" style="visibility: visible;">
         ${htmlContent}
@@ -119,20 +106,15 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
   };
 
   const handleCopyWeChat = async () => {
-    if (provider === 'openai' && !openaiConfig.apiKey) {
+    // Basic validation
+    if (aiConfig.provider === 'openai' && !aiConfig.openai?.apiKey) {
         addToast('Please configure OpenAI API Key in AI settings.', 'error');
         return;
     }
-    if (provider === 'gemini' && !process.env.API_KEY) {
+    if (aiConfig.provider === 'gemini' && !aiConfig.gemini?.apiKey && !process.env.API_KEY) {
         addToast('Gemini API Key is missing.', 'error');
         return;
     }
-
-    const exportConfig: ExportAIConfig = {
-        provider,
-        openai: provider === 'openai' ? openaiConfig : undefined,
-        geminiApiKey: provider === 'gemini' ? process.env.API_KEY : undefined
-    };
 
     setIsExporting(true);
     setShowPreview(true);
@@ -146,7 +128,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
     try {
       // 1. Generate the Outer Wrapper (Layout) first
       addToast("Generating layout structure...", "info");
-      const wrapperHtml = await generateWeChatWrapper(exportConfig, designData);
+      const wrapperHtml = await generateWeChatWrapper(aiConfig, designData);
       
       // Initial Preview with empty content
       setGeneratedHtml(wrapperHtml.replace('{{CONTENT}}', '<!-- Generating Content... -->'));
@@ -156,7 +138,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
       let accumulatedContentHtml = "";
 
       await streamWeChatArticleFromMarkdown(
-        exportConfig,
+        aiConfig,
         markdownContent,
         highlightColor,
         (index, total) => {
@@ -172,7 +154,6 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
           setCompletedCards(prev => [...prev, index]);
           accumulatedContentHtml += fullCardHtml;
           
-          // Real-time update of the preview with the wrapper + current content
           const currentPreview = wrapperHtml.replace('{{CONTENT}}', accumulatedContentHtml);
           setGeneratedHtml(currentPreview);
         }

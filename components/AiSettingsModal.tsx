@@ -1,13 +1,14 @@
 import React from 'react';
 import { Bot, X } from 'lucide-react';
-import { ServiceProvider } from '../types';
-import { OpenAIConfig } from '../services/openaiService';
+import { ServiceProvider, OpenAIConfig } from '../types';
 
 interface AiSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   provider: ServiceProvider;
   setProvider: (p: ServiceProvider) => void;
+  geminiKey: string;
+  setGeminiKey: (k: string) => void;
   openaiConfig: OpenAIConfig;
   setOpenaiConfig: React.Dispatch<React.SetStateAction<OpenAIConfig>>;
   t: any;
@@ -18,6 +19,8 @@ export const AiSettingsModal: React.FC<AiSettingsModalProps> = ({
   onClose,
   provider,
   setProvider,
+  geminiKey,
+  setGeminiKey,
   openaiConfig,
   setOpenaiConfig,
   t
@@ -67,6 +70,23 @@ export const AiSettingsModal: React.FC<AiSettingsModalProps> = ({
                   </div>
                </label>
             </div>
+
+            {/* Gemini Config Fields */}
+            {provider === 'gemini' && (
+               <div className="space-y-4 pt-4 border-t border-slate-100 animate-in slide-in-from-top-2">
+                 <div className="space-y-1">
+                   <label className="text-xs font-semibold text-slate-500 uppercase">{t.apiKey} (Optional)</label>
+                   <input 
+                     type="password" 
+                     value={geminiKey}
+                     onChange={(e) => setGeminiKey(e.target.value)}
+                     placeholder="Use default system key..."
+                     className="w-full p-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                   />
+                   <p className="text-[10px] text-slate-400">If you have your own Google Gemini API Key, enter it here. Otherwise, the system default key will be used.</p>
+                 </div>
+               </div>
+            )}
 
             {/* OpenAI Config Fields */}
             {provider === 'openai' && (

@@ -1,8 +1,7 @@
-
 import React, { useState } from 'react';
 import { Sparkles, Bot, Globe, Palette, RefreshCw, Wand2 } from 'lucide-react';
-import { DocumentDesign, Language, ServiceProvider } from '../../types';
-import { generateDesignVariations } from '../../services/geminiService';
+import { DocumentDesign, Language, ServiceProvider, AIConfig } from '../../types';
+import { generateDesignVariations } from '../../services/layoutService';
 import { DesignVariations } from './DesignVariations';
 import { useToast } from '../ToastSystem';
 
@@ -18,6 +17,7 @@ interface ConfigTabProps {
   toggleLanguage: () => void;
   provider: ServiceProvider;
   setShowAiSettings: (show: boolean) => void;
+  aiConfig: AIConfig;
   t: any;
 }
 
@@ -33,6 +33,7 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({
   toggleLanguage,
   provider,
   setShowAiSettings,
+  aiConfig,
   t
 }) => {
   const { addToast } = useToast();
@@ -45,8 +46,7 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({
     if (!prompt.trim()) return;
     setIsDesigning(true);
     try {
-      // Currently only implemented for Gemini in the service
-      const variations = await generateDesignVariations(prompt, 'auto');
+      const variations = await generateDesignVariations(aiConfig, prompt, 'auto');
       setDesignOptions(variations);
       addToast('2 style variations generated!', 'success');
     } catch (e: any) {
