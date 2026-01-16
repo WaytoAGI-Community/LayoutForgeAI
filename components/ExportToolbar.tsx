@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Monitor, Smartphone, Settings, Check, Loader2, FileCode, X, AlertCircle, Copy } from 'lucide-react';
+import { Monitor, Smartphone, Settings, Check, Loader2, FileCode, X, AlertCircle, Copy, ChevronUp, ChevronDown } from 'lucide-react';
 import { DocumentDesign, AIConfig } from '../types';
 import { streamWeChatArticleFromMarkdown, generateWeChatWrapper } from '../services/wechatExportService';
 import { useToast } from './ToastSystem';
@@ -28,12 +28,13 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
   
   // Preview State for Streaming
   const [showPreview, setShowPreview] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
   const [currentCardIndex, setCurrentCardIndex] = useState<number | null>(null);
   const [totalCards, setTotalCards] = useState<number>(0);
   const [currentCardHtml, setCurrentCardHtml] = useState<string>('');
   const [completedCards, setCompletedCards] = useState<number[]>([]);
   const [exportError, setExportError] = useState<string | null>(null);
-  
+
   // Store final result
   const [generatedHtml, setGeneratedHtml] = useState<string | null>(null);
 
@@ -177,8 +178,25 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
     }
   };
 
+  const minimizePreview = () => {
+      // 最小化预览窗口
+      setIsMinimized(true);
+  };
+
+  const restorePreview = () => {
+      // 恢复预览窗口
+      setIsMinimized(false);
+  };
+
   const closePreview = () => {
+      // 如果导出正在进行，停止导出
+      if (isExporting) {
+          setIsExporting(false);
+          addToast('Export cancelled', 'info');
+      }
+      // 关闭预览窗口并清理状态
       setShowPreview(false);
+      setIsMinimized(false);
       setExportError(null);
       setGeneratedHtml(null);
   };
@@ -235,8 +253,11 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
       </div>
 
       {showPreview && createPortal(
-        <div className="fixed bottom-4 right-4 w-[420px] max-h-[70vh] bg-slate-900 text-slate-100 rounded-xl shadow-2xl border border-slate-700 flex flex-col z-[100] animate-in slide-in-from-bottom-4 fade-in font-sans">
-          
+        <div
+          className={`fixed bottom-4 right-4 bg-slate-900 text-slate-100 rounded-xl shadow-2xl border border-slate-700 flex flex-col z-[100] animate-in slide-in-from-bottom-4 fade-in font-sans transition-all duration-300 ${
+            isMinimized ? 'w-auto h-auto' : 'w-[420px] max-h-[70vh]'
+          }`}
+        >
           <div className="flex items-center justify-between px-3 py-3 border-b border-slate-700 bg-slate-800/50 rounded-t-xl">
              <div className="flex items-center gap-2">
                 {exportError ? <AlertCircle className="w-4 h-4 text-red-500" /> : <Loader2 className={`w-4 h-4 ${isExporting ? 'animate-spin text-indigo-400' : 'text-emerald-400'}`} />}
@@ -244,60 +265,74 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
                   {exportError ? 'Export Error' : (generatedHtml && !isExporting ? 'Generation Complete' : `Generating... ${totalCards > 0 ? `(${ (currentCardIndex || 0) + 1}/${totalCards})` : ''}`)}
                 </span>
              </div>
-             <button 
-               onClick={closePreview} 
-               className="text-slate-400 hover:text-white transition p-1.5 hover:bg-slate-700 rounded-lg"
-             >
-               <X className="w-4 h-4" />
-             </button>
+             <div className="flex items-center gap-1">
+                <button
+                  onClick={isMinimized ? restorePreview : minimizePreview}
+                  className="text-slate-400 hover:text-white transition p-1.5 hover:bg-slate-700 rounded-lg"
+                  title={isMinimized ? "展开" : "最小化"}
+                >
+                  {isMinimized ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </button>
+                <button
+                  onClick={closePreview}
+                  className="text-slate-400 hover:text-red-400 transition p-1.5 hover:bg-slate-700 rounded-lg"
+                  title="关闭"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+             </div>
           </div>
 
-          <div className="flex-1 overflow-auto p-4 bg-black/30 min-h-[200px] scrollbar-thin scrollbar-thumb-slate-700">
-            {exportError ? (
-               <div className="text-red-300 text-sm p-3 bg-red-950/30 rounded border border-red-900/50 leading-relaxed">
-                 {exportError}
-                 <div className="mt-2 text-xs opacity-70">
-                    If this persists, check your API key in settings.
-                 </div>
-               </div>
-            ) : (
-                <pre className="text-[11px] leading-relaxed whitespace-pre-wrap break-all font-mono text-emerald-400/90 font-light">
-                {generatedHtml || '// Initializing layout engine...'}
-                </pre>
-            )}
-          </div>
-          
-          <div className="px-4 py-3 border-t border-slate-700 bg-slate-800/80 rounded-b-xl flex flex-col gap-3">
-              
-              {!exportError && isExporting && (
-                <div className="flex justify-between items-center text-[11px] text-slate-400">
-                    <div className="flex gap-1.5 items-center">
-                    <span className="mr-2">Cards:</span>
-                    {Array.from({length: Math.min(totalCards || 3, 15)}).map((_, i) => (
-                        <div 
-                        key={i} 
-                        className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${
-                            completedCards.includes(i) ? 'bg-emerald-500' : 
-                            (currentCardIndex === i && isExporting ? 'bg-indigo-500 animate-pulse' : 'bg-slate-700')
-                        }`} 
-                        />
-                    ))}
-                    {(totalCards > 15) && <span>...</span>}
+          {!isMinimized && (
+            <>
+              <div className="flex-1 overflow-auto p-4 bg-black/30 min-h-[200px] scrollbar-thin scrollbar-thumb-slate-700">
+                {exportError ? (
+                   <div className="text-red-300 text-sm p-3 bg-red-950/30 rounded border border-red-900/50 leading-relaxed">
+                     {exportError}
+                     <div className="mt-2 text-xs opacity-70">
+                        If this persists, check your API key in settings.
+                     </div>
+                   </div>
+                ) : (
+                    <pre className="text-[11px] leading-relaxed whitespace-pre-wrap break-all font-mono text-emerald-400/90 font-light">
+                    {generatedHtml || '// Initializing layout engine...'}
+                    </pre>
+                )}
+              </div>
+
+              <div className="px-4 py-3 border-t border-slate-700 bg-slate-800/80 rounded-b-xl flex flex-col gap-3">
+
+                  {!exportError && isExporting && (
+                    <div className="flex justify-between items-center text-[11px] text-slate-400">
+                        <div className="flex gap-1.5 items-center">
+                        <span className="mr-2">Cards:</span>
+                        {Array.from({length: Math.min(totalCards || 3, 15)}).map((_, i) => (
+                            <div
+                            key={i}
+                            className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${
+                                completedCards.includes(i) ? 'bg-emerald-500' :
+                                (currentCardIndex === i && isExporting ? 'bg-indigo-500 animate-pulse' : 'bg-slate-700')
+                            }`}
+                            />
+                        ))}
+                        {(totalCards > 15) && <span>...</span>}
+                        </div>
+                        <span>{Math.round((completedCards.length / (totalCards || 1)) * 100)}%</span>
                     </div>
-                    <span>{Math.round((completedCards.length / (totalCards || 1)) * 100)}%</span>
-                </div>
-              )}
+                  )}
 
-              {generatedHtml && !isExporting && !exportError && (
-                  <button
-                    onClick={() => generatedHtml && performCopy(generatedHtml)}
-                    className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition shadow-lg shadow-indigo-900/20 flex items-center justify-center gap-2"
-                  >
-                    {copiedType === 'html' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                    {copiedType === 'html' ? "Copied to Clipboard!" : "Copy Result to Clipboard"}
-                  </button>
-              )}
-          </div>
+                  {generatedHtml && !isExporting && !exportError && (
+                      <button
+                        onClick={() => generatedHtml && performCopy(generatedHtml)}
+                        className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition shadow-lg shadow-indigo-900/20 flex items-center justify-center gap-2"
+                      >
+                        {copiedType === 'html' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                        {copiedType === 'html' ? "Copied to Clipboard!" : "Copy Result to Clipboard"}
+                      </button>
+                  )}
+              </div>
+            </>
+          )}
         </div>,
         document.body
       )}

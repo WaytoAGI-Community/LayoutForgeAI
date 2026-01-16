@@ -25,21 +25,10 @@ Layout rules (very important):
   * Inside, a flex row: left decorative bar, main content, optional right bar.
   * Main content container:
 
-    * border-radius: 12px
     * padding: 12px 0
-    * background-color: #fdfdfd
+    * background-color: {HIGHLIGHT_COLOR}
     * flex: 100 100 0%
     * overflow: hidden
-
-Left/Right decorative bars:
-
-* Narrow vertical rectangles:
-
-  * width: 6px
-  * height: 75px
-  * background-color: {HIGHLIGHT_COLOR}
-  * Use <section> wrappers like typical WeChat export HTML.
-  * vertical-align: top
 
 Text styling:
 
