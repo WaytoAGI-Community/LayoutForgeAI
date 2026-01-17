@@ -1,30 +1,28 @@
 import React from 'react';
 import { Bot, X } from 'lucide-react';
-import { ServiceProvider, OpenAIConfig } from '../types';
+import { TRANSLATIONS } from '../constants';
+import { 
+  useShowAiSettings, useSetShowAiSettings,
+  useProvider, useSetProvider,
+  useGeminiKey, useSetGeminiKey,
+  useOpenaiConfig, useSetOpenaiConfig,
+  useLang
+} from '../store';
 
-interface AiSettingsModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  provider: ServiceProvider;
-  setProvider: (p: ServiceProvider) => void;
-  geminiKey: string;
-  setGeminiKey: (k: string) => void;
-  openaiConfig: OpenAIConfig;
-  setOpenaiConfig: React.Dispatch<React.SetStateAction<OpenAIConfig>>;
-  t: any;
-}
+export const AiSettingsModal: React.FC = () => {
+  const isOpen = useShowAiSettings();
+  const setShowAiSettings = useSetShowAiSettings();
+  const provider = useProvider();
+  const setProvider = useSetProvider();
+  const geminiKey = useGeminiKey();
+  const setGeminiKey = useSetGeminiKey();
+  const openaiConfig = useOpenaiConfig();
+  const setOpenaiConfig = useSetOpenaiConfig();
+  const lang = useLang();
 
-export const AiSettingsModal: React.FC<AiSettingsModalProps> = ({
-  isOpen,
-  onClose,
-  provider,
-  setProvider,
-  geminiKey,
-  setGeminiKey,
-  openaiConfig,
-  setOpenaiConfig,
-  t
-}) => {
+  const t = TRANSLATIONS[lang];
+
+  const onClose = () => setShowAiSettings(false);
   if (!isOpen) return null;
 
   return (
@@ -81,7 +79,7 @@ export const AiSettingsModal: React.FC<AiSettingsModalProps> = ({
                      value={geminiKey}
                      onChange={(e) => setGeminiKey(e.target.value)}
                      placeholder="Use default system key..."
-                     className="w-full p-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                     className="w-full p-0,1 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
                    />
                    <p className="text-[10px] text-slate-400">If you have your own Google Gemini API Key, enter it here. Otherwise, the system default key will be used.</p>
                  </div>
@@ -98,7 +96,7 @@ export const AiSettingsModal: React.FC<AiSettingsModalProps> = ({
                     value={openaiConfig.baseUrl}
                     onChange={(e) => setOpenaiConfig(prev => ({...prev, baseUrl: e.target.value}))}
                     placeholder="https://api.openai.com/v1"
-                    className="w-full p-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
+                    className="w-full p-0.1 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
                   />
                 </div>
 
@@ -109,7 +107,7 @@ export const AiSettingsModal: React.FC<AiSettingsModalProps> = ({
                     value={openaiConfig.apiKey}
                     onChange={(e) => setOpenaiConfig(prev => ({...prev, apiKey: e.target.value}))}
                     placeholder="sk-..."
-                    className="w-full p-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
+                    className="w-full p-0.1 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
                   />
                 </div>
 
@@ -120,7 +118,7 @@ export const AiSettingsModal: React.FC<AiSettingsModalProps> = ({
                     value={openaiConfig.model}
                     onChange={(e) => setOpenaiConfig(prev => ({...prev, model: e.target.value}))}
                     placeholder="gpt-4-turbo-preview"
-                    className="w-full p-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
+                    className="w-full p-0.1 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
                   />
                 </div>
               </div>

@@ -5,50 +5,96 @@ import {
   Settings, 
   Layout as LayoutIcon
 } from 'lucide-react';
-import { DocumentDesign, Language, ServiceProvider, AIConfig } from '../types';
+import { TRANSLATIONS } from '../constants';
+import { generateLayoutFromPrompt } from '../services/layoutService';
+import { useToast } from './ToastSystem';
 import { WriteTab } from './editor/WriteTab';
 import { PreviewTab } from './editor/PreviewTab';
 import { ConfigTab } from './editor/ConfigTab';
+import { 
+  useActiveTab, useSetActiveTab,
+  useMarkdownContent, useSetMarkdownContent,
+  usePrompt, useSetPrompt,
+  useIsGenerating, useSetIsGenerating,
+  useError, useSetError,
+  useLang, useSetLang,
+  useDesignData, useSetDesignData,
+  useProvider, useSetProvider,
+  useGeminiKey, useSetGeminiKey,
+  useOpenaiConfig, useSetOpenaiConfig,
+  useShowAiSettings, useSetShowAiSettings
+} from '../store';
 
-interface EditorPanelProps {
-  activeTab: 'write' | 'preview' | 'config';
-  setActiveTab: (tab: 'write' | 'preview' | 'config') => void;
-  markdownContent: string;
-  setMarkdownContent: (content: string) => void;
-  prompt: string;
-  setPrompt: (prompt: string) => void;
-  isGenerating: boolean;
-  handleGenerate: () => void;
-  error: string | null;
-  lang: Language;
-  toggleLanguage: () => void;
-  designData: DocumentDesign;
-  setDesignData: (design: DocumentDesign) => void;
-  provider: ServiceProvider;
-  setShowAiSettings: (show: boolean) => void;
-  aiConfig: AIConfig;
-  t: any;
-}
+export const EditorPanel: React.FC = () => {
+  const activeTab = useActiveTab();
+  const setActiveTab = useSetActiveTab();
+  const markdownContent = useMarkdownContent();
+  const setMarkdownContent = useSetMarkdownContent();
+  const prompt = usePrompt();
+  const setPrompt = useSetPrompt();
+  const isGenerating = useIsGenerating();
+  const setIsGenerating = useSetIsGenerating();
+  const error = useError();
+  const setError = useSetError();
+  const lang = useLang();
+  const setLang = useSetLang();
+  const designData = useDesignData();
+  const setDesignData = useSetDesignData();
+  const provider = useProvider();
+  const setProvider = useSetProvider();
+  const geminiKey = useGeminiKey();
+  const setGeminiKey = useSetGeminiKey();
+  const openaiConfig = useOpenaiConfig();
+  const setOpenaiConfig = useSetOpenaiConfig();
+  const showAiSettings = useShowAiSettings();
+  const setShowAiSettings = useSetShowAiSettings();
 
-export const EditorPanel: React.FC<EditorPanelProps> = ({
-  activeTab,
-  setActiveTab,
-  markdownContent,
-  setMarkdownContent,
-  prompt,
-  setPrompt,
-  isGenerating,
-  handleGenerate,
-  error,
-  lang,
-  toggleLanguage,
-  designData,
-  setDesignData,
-  provider,
-  setShowAiSettings,
-  aiConfig,
-  t
-}) => {
+  const toggleLanguage = () => {
+    setLang((prev) => (prev === 'zh' ? 'en' : 'zh'));
+  };
+
+  const aiConfig = {
+    provider,
+    openai: openaiConfig,
+    gemini: { apiKey: geminiKey || process.env.API_KEY }
+  };
+
+  const { addToast } = useToast();
+  const t = TRANSLATIONS[lang];
+
+  const handleGenerate = async () => {
+    if (!prompt.trim()) return;
+    setIsGenerating(true);
+    setError(null);
+
+    const progressCallback = (type: 'design' | 'content', data: any) => {
+      if (type === 'design') {
+        setDesignData(data);
+      } else if (type === 'content') {
+        setMarkdownContent(data);
+      }
+    };
+
+    const designToUse = designData.id !== 'default' ? designData : undefined;
+
+    try {
+      await generateLayoutFromPrompt(
+        aiConfig,
+        prompt,
+        markdownContent,
+        'auto',
+        progressCallback,
+        designToUse
+      );
+      addToast(t.generate + " " + t.copied, 'success');
+    } catch (err: any) {
+      const msg = err.message || t.error;
+      setError(msg);
+      addToast(msg, 'error');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   return (
     <section className="flex-1 flex flex-col min-w-[350px] border-r border-slate-200 bg-white relative shadow-lg z-20">
@@ -101,18 +147,8 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
         {/* View: Config (Generator Settings) */}
         {activeTab === 'config' && (
           <ConfigTab 
-            prompt={prompt}
-            setPrompt={setPrompt}
-            designData={designData}
-            setDesignData={setDesignData}
-            isGenerating={isGenerating}
             handleGenerate={handleGenerate}
-            error={error}
-            lang={lang}
             toggleLanguage={toggleLanguage}
-            provider={provider}
-            setShowAiSettings={setShowAiSettings}
-            aiConfig={aiConfig}
             t={t}
           />
         )}

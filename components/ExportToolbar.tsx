@@ -1,27 +1,34 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Monitor, Smartphone, Settings, Check, Loader2, FileCode, X, AlertCircle, Copy, ChevronUp, ChevronDown } from 'lucide-react';
-import { DocumentDesign, AIConfig } from '../types';
+import { TRANSLATIONS } from '../constants';
 import { streamWeChatArticleFromMarkdown, generateWeChatWrapper } from '../services/wechatExportService';
 import { useToast } from './ToastSystem';
+import { 
+  useDesignData,
+  usePreviewMode, useSetPreviewMode,
+  useMarkdownContent,
+  useProvider, useGeminiKey, useOpenaiConfig,
+  useLang
+} from '../store';
 
-interface ExportToolbarProps {
-  designData: DocumentDesign;
-  previewMode: 'desktop' | 'mobile';
-  setPreviewMode: (mode: 'desktop' | 'mobile') => void;
-  t: any;
-  markdownContent: string;
-  aiConfig: AIConfig;
-}
+export const ExportToolbar: React.FC = () => {
+  const designData = useDesignData();
+  const previewMode = usePreviewMode();
+  const setPreviewMode = useSetPreviewMode();
+  const markdownContent = useMarkdownContent();
+  const provider = useProvider();
+  const geminiKey = useGeminiKey();
+  const openaiConfig = useOpenaiConfig();
+  const lang = useLang();
 
-export const ExportToolbar: React.FC<ExportToolbarProps> = ({
-  designData,
-  previewMode,
-  setPreviewMode,
-  t,
-  markdownContent,
-  aiConfig
-}) => {
+  const aiConfig = {
+    provider,
+    openai: openaiConfig,
+    gemini: { apiKey: geminiKey || process.env.API_KEY }
+  };
+
+  const t = TRANSLATIONS[lang];
   const [copiedType, setCopiedType] = useState<'config' | 'html' | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const { addToast } = useToast();

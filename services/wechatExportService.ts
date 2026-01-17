@@ -33,13 +33,6 @@ Layout rules (very important):
 Text styling:
 
 * Wrap text in <p><span>...</span></p> blocks.
-* Use:
-
-  * font-size: 15px;
-  * line-height: 2;
-  * font-family: PingFangSC-light, -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Microsoft YaHei", Arial, sans-serif;
-  * text-align: justify
-  * padding: 0 16px
 * Use "white-space: normal; margin: 0; padding: 0;" on <p> tags.
 
 Content rules:
@@ -79,7 +72,7 @@ Output:
      </section>
   </section>
 
-Translation Rules (Tailwind -> Inline CSS):
+Translation Rules example (Tailwind -> Inline CSS):
 - bg-slate-100 -> background-color: #f1f5f9;
 - bg-white -> background-color: #ffffff;
 - shadow-xl -> box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1);

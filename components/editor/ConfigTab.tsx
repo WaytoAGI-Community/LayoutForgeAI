@@ -1,41 +1,56 @@
 import React, { useState } from 'react';
 import { Sparkles, Bot, Globe, Palette, RefreshCw, Wand2 } from 'lucide-react';
-import { DocumentDesign, Language, ServiceProvider, AIConfig } from '../../types';
+import { DocumentDesign } from '../../types';
 import { generateDesignVariations } from '../../services/layoutService';
 import { DesignVariations } from './DesignVariations';
 import { useToast } from '../ToastSystem';
+import { 
+  usePrompt, useSetPrompt,
+  useDesignData, useSetDesignData,
+  useIsGenerating, useSetIsGenerating,
+  useError, useSetError,
+  useLang, useSetLang,
+  useProvider, useSetProvider,
+  useGeminiKey, useSetGeminiKey,
+  useOpenaiConfig, useSetOpenaiConfig,
+  useShowAiSettings, useSetShowAiSettings
+} from '../../store';
 
 interface ConfigTabProps {
-  prompt: string;
-  setPrompt: (prompt: string) => void;
-  designData: DocumentDesign;
-  setDesignData: (design: DocumentDesign) => void;
-  isGenerating: boolean;
   handleGenerate: () => void;
-  error: string | null;
-  lang: Language;
   toggleLanguage: () => void;
-  provider: ServiceProvider;
-  setShowAiSettings: (show: boolean) => void;
-  aiConfig: AIConfig;
   t: any;
 }
 
 export const ConfigTab: React.FC<ConfigTabProps> = ({
-  prompt,
-  setPrompt,
-  designData,
-  setDesignData,
-  isGenerating,
   handleGenerate,
-  error,
-  lang,
   toggleLanguage,
-  provider,
-  setShowAiSettings,
-  aiConfig,
   t
 }) => {
+  const prompt = usePrompt();
+  const setPrompt = useSetPrompt();
+  const designData = useDesignData();
+  const setDesignData = useSetDesignData();
+  const isGenerating = useIsGenerating();
+  const setIsGenerating = useSetIsGenerating();
+  const error = useError();
+  const setError = useSetError();
+  const lang = useLang();
+  const setLang = useSetLang();
+  const provider = useProvider();
+  const setProvider = useSetProvider();
+  const geminiKey = useGeminiKey();
+  const setGeminiKey = useSetGeminiKey();
+  const openaiConfig = useOpenaiConfig();
+  const setOpenaiConfig = useSetOpenaiConfig();
+  const showAiSettings = useShowAiSettings();
+  const setShowAiSettings = useSetShowAiSettings();
+
+  const aiConfig = {
+    provider,
+    openai: openaiConfig,
+    gemini: { apiKey: geminiKey || process.env.API_KEY }
+  };
   const { addToast } = useToast();
   
   // Local state for style variations options
